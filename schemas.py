@@ -1,48 +1,41 @@
 """
-Database Schemas
+Database Schemas for AI Resume Refiner
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a MongoDB collection (collection name is lowercase of class name).
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
+from typing import Optional, List
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
+    uid: str = Field(..., description="Firebase Auth user id")
     email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: Optional[str] = Field(None, description="Display name")
+    photo_url: Optional[str] = Field(None, description="Avatar URL")
+    credits: int = Field(0, description="Available credits for downloads")
+    referrals_count: int = Field(0, description="Number of successful referrals")
+    referred_by: Optional[str] = Field(None, description="UID of the referrer")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Resume(BaseModel):
+    uid: str = Field(..., description="Owner user id")
+    original_text: str = Field(..., description="Extracted raw text from uploaded resume")
+    target_role: str = Field(..., description="Target job role, e.g., Data Analyst")
+    refined_text: Optional[str] = Field(None, description="AI-refined resume text")
+    status: str = Field("uploaded", description="uploaded | refined | downloaded")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Log(BaseModel):
+    uid: Optional[str] = Field(None, description="User id if available")
+    type: str = Field(..., description="upload | refine | payment | download | referral")
+    message: str = Field(..., description="Human-readable message")
+    meta: Optional[dict] = Field(default_factory=dict, description="Additional metadata")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Payment(BaseModel):
+    uid: str = Field(..., description="User id")
+    provider: str = Field(..., description="razorpay | stripe")
+    amount: int = Field(..., description="Amount in smallest currency unit (e.g., paise)")
+    currency: str = Field("INR", description="Currency code")
+    status: str = Field("created", description="created | paid | failed")
+    order_id: Optional[str] = Field(None, description="Provider order id")
+    payment_id: Optional[str] = Field(None, description="Provider payment id")
+    signature: Optional[str] = Field(None, description="Verification signature if any")
+
